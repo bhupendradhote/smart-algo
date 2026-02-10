@@ -8,6 +8,7 @@ import MainLayout from "../components/layouts/MainLayout";
 import TestApi from "../components/TestApi";
 import AngelChart from "../pages/angel/AngelChart";
 import AngelLive from "../components/AngelLive";
+import Chart from "../components/chart/chart";
 
 const AppRoutes = () => {
   return (
@@ -15,6 +16,8 @@ const AppRoutes = () => {
 
 
 <Route path="/test-api" element={<TestApi />} />
+<Route path="/test-chart" element={<Chart />} />
+
 
 
       {/* Public Routes */}

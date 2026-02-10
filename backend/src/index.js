@@ -14,12 +14,19 @@ import angelWsRoutes from "./routes/angel/angel.ws.routes.js";
 
 import indicatorRoutes from "./routes/indicators/indicators.routes.js";
 
+import indicatordRoutes from "./routes/indicators/indicatordRoutes.js";
+
+
 
 const app = express();
 
 /* -------------------- Middlewares -------------------- */
 app.use(cors());
 app.use(express.json());
+
+
+
+app.use("/api/indicators", indicatordRoutes);
 
 /* -------------------- Routes -------------------- */
 app.use("/api/auth", authRoutes);

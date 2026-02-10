@@ -21,8 +21,6 @@ import {
   getDonchian,
 } from "../../controllers/indicators/indicators.js";
 
-
-
 const router = express.Router();
 
 /* ================= Moving Averages ================= */
