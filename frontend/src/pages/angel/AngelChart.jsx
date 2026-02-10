@@ -113,7 +113,6 @@ const AngelChart = () => {
     intervalMaxDays: INTERVAL_MAX_DAYS,
   });
 
-  // Mirror hook error / marketData to local state for UI if desired
   useEffect(() => {
     if (hookError) setError(hookError);
     setMarketDataFromHook(marketData);

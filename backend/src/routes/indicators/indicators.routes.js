@@ -1,39 +1,50 @@
-// backend/src/routes/indicators/indicators.routes.js
-
 import express from "express";
 
-// SMA (existing – unchanged)
-import { getSMA } from "../../controllers/indicators/sma.js";
-
-// New indicators
 import {
+  // Moving averages
+  getSMA,
   getEMA,
   getWMA,
+  getSMMA,
+  getHMA,
+  getVWAP,
+
+  // Momentum / Trend
   getMACD,
   getRSI,
+  getStochastic,
+  getCCI,
+
+  // Volatility
   getBBands,
   getATR,
+  getDonchian,
 } from "../../controllers/indicators/indicators.js";
+
+
 
 const router = express.Router();
 
-/**
- * Moving Averages
- */
-router.post("/sma", getSMA);      // Simple Moving Average
-router.post("/ema", getEMA);      // Exponential Moving Average
-router.post("/wma", getWMA);      // Weighted Moving Average
+/* ================= Moving Averages ================= */
 
-/**
- * Momentum / Trend
- */
-router.post("/macd", getMACD);    // MACD
-router.post("/rsi", getRSI);      // Relative Strength Index
+router.post("/sma", getSMA);
+router.post("/ema", getEMA);
+router.post("/wma", getWMA);
+router.post("/smma", getSMMA);
+router.post("/hma", getHMA);
+router.post("/vwap", getVWAP);
 
-/**
- * Volatility
- */
-router.post("/bbands", getBBands); // Bollinger Bands
-router.post("/atr", getATR);       // Average True Range
+/* ================= Momentum / Trend ================= */
+
+router.post("/macd", getMACD);
+router.post("/rsi", getRSI);
+router.post("/stochastic", getStochastic);
+router.post("/cci", getCCI);
+
+/* ================= Volatility ================= */
+
+router.post("/bbands", getBBands);
+router.post("/atr", getATR);
+router.post("/donchian", getDonchian);
 
 export default router;

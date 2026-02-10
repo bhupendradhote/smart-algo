@@ -11,22 +11,6 @@ import {
   getATR,
 } from "../services/indicator/indicatorService";
 
-/**
- * useIndicators
- *
- * - inputs:
- *    - priceOnlyCandles: [{time, close}, ...]   // for SMA/EMA/WMA/MACD/RSI/BB (BB uses close too)
- *    - fullCandles: [{time, open, high, low, close}, ...] // for ATR (needs high/low)
- *    - config: { showSMA, smaPeriod, showEMA, emaPeriod, showWMA, wmaPeriod, showMACD, macdFast, macdSlow, macdSignal, showRSI, rsiPeriod, showBB, bbPeriod, bbStdDev, showATR, atrPeriod }
- *
- * - returns:
- *    - { data: { sma, ema, wma, macd, rsi, bbands, atr }, loading, error }
- *
- * Notes:
- *  - The hook uses a request token to ignore stale results.
- *  - Results are sanitized: only numeric values are returned to avoid lightweight-charts assertion errors.
- *  - Calls run in parallel where possible.
- */
 
 const isNumber = (v) => typeof v === "number" && Number.isFinite(v);
 
@@ -69,10 +53,8 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
     },
   });
 
-  // Build a simple key to decide whether inputs changed
   const buildKey = () => {
     try {
-      // keep it small: length + last timestamps + config JSON
       const times = (priceOnlyCandles?.length ? priceOnlyCandles[priceOnlyCandles.length - 1]?.time : 0);
       const len = priceOnlyCandles?.length || 0;
       return `${len}:${times}:${JSON.stringify(config)}`;
@@ -84,13 +66,11 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
   useEffect(() => {
     const key = buildKey();
 
-    // If cached and same key, reuse
     if (cacheRef.current.key === key && cacheRef.current.result) {
       setState((s) => ({ ...s, data: cacheRef.current.result }));
       return;
     }
 
-    // Nothing to do if no candles
     if (!Array.isArray(priceOnlyCandles) || priceOnlyCandles.length === 0) {
       setState((s) => ({
         ...s,
@@ -111,11 +91,9 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
     const currentRequest = ++requestId.current;
     setState((s) => ({ ...s, loading: true, error: null }));
 
-    // prepare payloads
     const payloadMA = priceOnlyCandles; // {time, close}
     const payloadFull = fullCandles; // includes high/low
 
-    // Build promises conditionally
     const promises = [];
 
     if (config.showSMA) {
@@ -206,10 +184,8 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
       promises.push(Promise.resolve({ type: "atr", data: [] }));
     }
 
-    // Execute all requests in parallel (promises array keeps order but results include type)
     Promise.all(promises)
       .then((results) => {
-        // If a new request started meanwhile, ignore this result
         if (currentRequest !== requestId.current) return;
 
         const out = {
@@ -225,7 +201,6 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
         for (const res of results) {
           const { type, data, err } = res;
           if (err) {
-            // log specific indicator error but keep others
             console.error(`Indicator ${type} error:`, err);
             continue;
           }
@@ -236,13 +211,11 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
           } else if (type === "wma") {
             out.wma = sanitizeLine(data);
           } else if (type === "macd") {
-            // macd returns array of {time, macd, signal, histogram}
             out.macd.hist = sanitizeMACDHist(data);
             out.macd.signal = sanitizeMACDSignal(data);
           } else if (type === "rsi") {
             out.rsi = sanitizeLine(data);
           } else if (type === "bb") {
-            // data: [{time, middle, upper, lower}]
             if (Array.isArray(data)) {
               out.bbands.middle = data.filter((b) => b && isNumber(b.middle)).map((b) => ({ time: b.time, value: b.middle }));
               out.bbands.upper = data.filter((b) => b && isNumber(b.upper)).map((b) => ({ time: b.time, value: b.upper }));
@@ -253,7 +226,6 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
           }
         }
 
-        // Cache and set
         cacheRef.current = { key, result: out };
         setState({ loading: false, error: null, data: out });
       })
@@ -263,7 +235,6 @@ export default function useIndicators(priceOnlyCandles, fullCandles, config) {
         setState({ loading: false, error: e.message || "Indicator fetch failed", data: state.data });
       });
 
-    // cleanup function - if component unmounts we bump requestId to ignore pending responses
     return () => {
       requestId.current += 1;
     };
