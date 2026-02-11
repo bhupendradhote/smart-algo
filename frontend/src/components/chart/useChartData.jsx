@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getHistoricalData, getMarketData } from "../../services/angelServices/historicalQuoteService";
 import { getBrokerAccounts } from "../../services/angelServices/brokerAccountService";
@@ -14,7 +13,6 @@ export default function useChartData(symbolToken, interval) {
 
   const mountedRef = useRef(true);
 
-  // 1. HELPER: Get Max Days based on your API limits
   const getMaxDaysBack = (tf) => {
     switch (tf) {
       case "ONE_MINUTE": return 30;
@@ -58,10 +56,8 @@ export default function useChartData(symbolToken, interval) {
     if (!Array.isArray(rawData)) return [];
     
     const validData = rawData.map(item => {
-      // Parse time safely
       let time = item.time;
       if (typeof time === "string") time = new Date(time).getTime();
-      // Convert ms to seconds for Lightweight Charts
       time = time / 1000; 
 
       if (isNaN(time)) return null;
@@ -76,7 +72,6 @@ export default function useChartData(symbolToken, interval) {
       };
     }).filter(Boolean);
 
-    // Deduplicate by time
     const uniqueMap = new Map();
     validData.forEach(item => uniqueMap.set(item.time, item));
     return Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
@@ -94,7 +89,6 @@ export default function useChartData(symbolToken, interval) {
       const maxDays = getMaxDaysBack(interval);
       const fromDate = new Date(now.getTime() - maxDays * 24 * 60 * 60 * 1000);
 
-      // Angel API Date Format: YYYY-MM-DD HH:MM
       const formatDate = (d) => {
         const pad = n => n.toString().padStart(2, '0');
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -119,16 +113,13 @@ export default function useChartData(symbolToken, interval) {
       ]);
 
       if (mountedRef.current) {
-        // Handle Historical Data
         if (histRes.status === "fulfilled" && histRes.value?.data) {
           const cleanCandles = processData(histRes.value.data);
           setCandles(cleanCandles);
         } else {
-           // Fallback if data is empty or error
            console.warn("Historical fetch failed or empty", histRes);
         }
 
-        // Handle Live Price
         if (mktRes.status === "fulfilled") {
            const data = mktRes.value?.data?.fetched?.[0] || mktRes.value?.data?.data?.fetched?.[0];
            if (data) setMarketData(data);
@@ -148,11 +139,10 @@ export default function useChartData(symbolToken, interval) {
     fetchData();
   }, [fetchData]);
 
-  // Indicator Payload
   const getIndicatorPayload = useCallback(() => {
     return candles.map(c => ({
       ...c,
-      time: c.time, // Seconds
+      time: c.time, 
       hl2: (c.high + c.low) / 2,
       hlc3: (c.high + c.low + c.close) / 3,
       ohlc4: (c.open + c.high + c.low + c.close) / 4,

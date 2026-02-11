@@ -21,6 +21,24 @@ const INDICATOR_HANDLERS = {
   vwapCalculator,
 };
 
+//  get the list of indicators for the UI sidebar
+export const listIndicators = async (req, res) => {
+  try {
+    const list = await getEnabledIndicators();
+    const menu = list.map(i => ({
+      id: i.id,
+      code: i.code,
+      name: i.name,
+      type: i.chart_type || 'overlay', 
+      default_color: i.default_color
+    }));
+    res.json(menu);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to list indicators" });
+  }
+};
+
+
 const buildParamsFromRows = (paramsArr) => {
   const params = {};
   (paramsArr || []).forEach((p) => {
