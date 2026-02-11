@@ -11,77 +11,7 @@ import useChartData from "./useChartData";
 import useIndicators from "./useIndicators";
 import Sidebar from "./Sidebar"; 
 import { getIndicatorList } from "../../services/indicator/indicatorsdService";
-
-
-const styles = {
-  container: {
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-    height: "100vh",
-    background: "#0f1220",
-    color: "#d1d4dc",
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif",
-  },
-  toolbar: {
-    display: "flex",
-    alignItems: "center",
-    padding: "10px 16px",
-    borderBottom: "1px solid #20242e",
-    background: "#0f1220",
-    gap: "12px",
-    zIndex: 10,
-  },
-  symbol: { fontWeight: 700, fontSize: 18, color: "#fff", marginRight: 10 },
-  select: {
-    background: "#161923",
-    color: "#d1d4dc",
-    border: "1px solid #2b313a",
-    padding: "6px 10px",
-    borderRadius: 6,
-    cursor: "pointer",
-    fontSize: 13,
-  },
-  btnGroup: {
-    display: "flex",
-    background: "#161923",
-    borderRadius: 6,
-    overflow: "hidden",
-    border: "1px solid #2b313a",
-  },
-  tfBtn: (active) => ({
-    background: active ? "#2962ff" : "transparent",
-    color: active ? "#fff" : "#c9cdd4",
-    border: "none",
-    padding: "6px 12px",
-    fontSize: 13,
-    cursor: "pointer",
-    transition: "0.12s",
-  }),
-  chartArea: { flex: 1, position: "relative", overflow: "hidden" },
-  status: {
-    padding: "6px 12px",
-    fontSize: 12,
-    background: "#0f1220",
-    borderTop: "1px solid #20242e",
-    color: "#9aa0aa",
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  indicatorBtn: {
-    background: "transparent",
-    border: "1px solid #2962ff",
-    color: "#2962ff",
-    padding: "6px 12px",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontSize: "13px",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-  },
-};
+import "./chart.css";
 
 const SYMBOL_MAP = {
   SBIN: "3045",
@@ -288,116 +218,102 @@ export default function Chart() {
     opts: { debug: false },
   });
 
-  return (
-    <div style={styles.container}>
-      {/* Sidebar Component */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        availableIndicators={availableIndicators}
-        activeIndicators={activeIndicators}
-        onToggle={toggleIndicator}
-      />
+ return (
+  <div className="chart-container">
+    {/* Sidebar */}
+    <Sidebar
+      isOpen={isSidebarOpen}
+      onClose={() => setSidebarOpen(false)}
+      availableIndicators={availableIndicators}
+      activeIndicators={activeIndicators}
+      onToggle={toggleIndicator}
+    />
 
-      <div style={styles.toolbar}>
-        <div style={styles.symbol}>{symbol}</div>
+    {/* Toolbar */}
+    <div className="chart-toolbar">
+      <div className="chart-symbol">{symbol}</div>
 
-        <div style={styles.btnGroup}>
-          {TIMEFRAMES.map((tf) => (
-            <button
-              key={tf.value}
-              onClick={() => setInterval(tf.value)}
-              style={styles.tfBtn(interval === tf.value)}
-            >
-              {tf.label}
-            </button>
-          ))}
-        </div>
-
-        {/* --- INDICATORS BUTTON --- */}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          style={styles.indicatorBtn}
-        >
-          <span>fx</span> Indicators
-        </button>
-
-        <select
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          style={styles.select}
-        >
-          {Object.keys(SYMBOL_MAP).map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-
-        <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-          }}
-        >
-          <span
-            style={{
-              fontSize: 12,
-              color: credsPresent ? "#06b081" : "#f23645",
-            }}
-          >
-            {credsPresent ? "● Connected" : "● Offline"}
-          </span>
+      <div className="chart-btn-group">
+        {TIMEFRAMES.map((tf) => (
           <button
-            onClick={() => refresh()}
-            style={{
-              ...styles.select,
-              background: "#2962ff",
-              color: "white",
-              border: "none",
-            }}
+            key={tf.value}
+            onClick={() => setInterval(tf.value)}
+            className={`chart-tf-btn ${
+              interval === tf.value ? "active" : ""
+            }`}
           >
-            {loading ? "Loading..." : "Refresh"}
+            {tf.label}
           </button>
-        </div>
+        ))}
       </div>
 
-      <div style={styles.chartArea}>
-        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      {/* Indicators Button */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="chart-indicator-btn"
+      >
+        fx Indicators
+      </button>
 
-        {(error || (loading && (!candles || candles.length === 0))) && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%,-50%)",
-              color: "#9aa0aa",
-              background: "#12141a",
-              padding: 18,
-              borderRadius: 8,
-              boxShadow: "0 6px 18px rgba(0,0,0,0.5)",
-              textAlign: "center",
-            }}
-          >
-            {error || "Loading Market Data..."}
-          </div>
-        )}
-      </div>
+      <select
+        value={symbol}
+        onChange={(e) => setSymbol(e.target.value)}
+        className="chart-select"
+      >
+        {Object.keys(SYMBOL_MAP).map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
 
-      <div style={styles.status}>
-        <div>
-          Price:{" "}
-          {marketData?.ltp ??
-            (candles?.length ? candles[candles.length - 1].close : "--")}
-        </div>
-        <div>
-          Last Updated:{" "}
-          {lastUpdated ? lastUpdated.toLocaleTimeString() : "--"}
-        </div>
+      <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+        <span
+          className={
+            credsPresent ? "status-connected" : "status-offline"
+          }
+        >
+          {credsPresent ? "● Connected" : "● Offline"}
+        </span>
+
+        <button
+          onClick={() => refresh()}
+          className="chart-indicator-btn"
+          style={{ background: "#2962ff", color: "#fff" }}
+        >
+          {loading ? "Loading..." : "Refresh"}
+        </button>
       </div>
     </div>
-  );
+
+    {/* Chart Area */}
+    <div className="chart-area">
+      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+
+      {(error || (loading && (!candles || candles.length === 0))) && (
+        <div className="chart-loading-overlay">
+          {error || "Loading Market Data..."}
+        </div>
+      )}
+    </div>
+
+    {/* Status Bar */}
+    <div className="chart-status">
+      <div>
+        Price:{" "}
+        {marketData?.ltp ??
+          (candles?.length
+            ? candles[candles.length - 1].close
+            : "--")}
+      </div>
+      <div>
+        Last Updated:{" "}
+        {lastUpdated
+          ? lastUpdated.toLocaleTimeString()
+          : "--"}
+      </div>
+    </div>
+  </div>
+);
+
 }
