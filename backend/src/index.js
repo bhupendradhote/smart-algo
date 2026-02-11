@@ -1,3 +1,5 @@
+// backend\src\index.js
+
 import dotenv from "dotenv";
 import "dotenv/config";
 dotenv.config();
@@ -13,18 +15,17 @@ import angelRoutes from "./routes/angel/angel.routes.js";
 import angelWsRoutes from "./routes/angel/angel.ws.routes.js";
 
 import indicatorRoutes from "./routes/indicators/indicators.routes.js";
-
 import indicatordRoutes from "./routes/indicators/indicatordRoutes.js";
-
-
 
 const app = express();
 
 /* -------------------- Middlewares -------------------- */
 app.use(cors());
-app.use(express.json());
 
-
+// --- FIX: Increase Payload Limit to 50MB ---
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+// -------------------------------------------
 
 app.use("/api/indicators", indicatordRoutes);
 
@@ -52,7 +53,7 @@ const server = http.createServer(app);
 /* ---- Socket.IO Setup ---- */
 export const io = new SocketIO(server, {
   cors: {
-    origin: "*", // tighten in production
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });

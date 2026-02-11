@@ -1,15 +1,18 @@
+// backend/src/models/indicatorModel.js
 import { getDB } from "../config/db.js";
 
-// Get all enabled indicators
-
+// Get all enabled indicators (basic metadata)
 export const getEnabledIndicators = async () => {
   const [rows] = await getDB().query(
-    `SELECT * FROM indicators WHERE enabled = 1`
+    `SELECT id, code, name, default_color, chart_type, display_order, enabled
+     FROM indicators
+     WHERE enabled = 1
+     ORDER BY display_order ASC`
   );
   return rows;
 };
 
-//Get parameters for an indicator
+// Get parameters for an indicator
 export const getIndicatorParams = async (indicatorId) => {
   const [rows] = await getDB().query(
     `SELECT param_key, param_type, default_value
@@ -20,13 +23,25 @@ export const getIndicatorParams = async (indicatorId) => {
   return rows;
 };
 
-//  Get handler info
+// Get handler (logic) info for an indicator
 export const getIndicatorHandler = async (indicatorId) => {
   const [rows] = await getDB().query(
-    `SELECT handler FROM indicator_logic WHERE indicator_id = ?`,
+    `SELECT handler, module_path, returns, description
+     FROM indicator_logic
+     WHERE indicator_id = ?`,
     [indicatorId]
   );
-  return rows[0];
+  return rows[0] || null;
 };
 
-
+// Get series metadata for an indicator
+export const getIndicatorSeries = async (indicatorId) => {
+  const [rows] = await getDB().query(
+    `SELECT series_key, series_name, series_type, color, visible, y_axis, display_order, value_expression
+     FROM indicator_series
+     WHERE indicator_id = ?
+     ORDER BY display_order ASC`,
+    [indicatorId]
+  );
+  return rows;
+};
