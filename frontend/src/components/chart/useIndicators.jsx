@@ -10,17 +10,18 @@ export default function useIndicators({
   mainPaneRef,
   getIndicatorPayload,
   candles,
-  activeIndicators,
+  activeConfigs = [], 
   enabled = true,
+  opts = {},
 }) {
   const seriesMapRef = useRef({}); 
   const paneMapRef = useRef({}); 
+  const debug = Boolean(opts.debug);
 
   useEffect(() => {
     if (!enabled) return;
     const chartApi = chartApiRef?.current;
     const mainPane = mainPaneRef?.current;
-
     if (!chartApi || !mainPane) return;
 
     // 1. Prepare Payload
@@ -42,19 +43,18 @@ export default function useIndicators({
     const fetchAndRender = async () => {
       try {
         const payload = buildPayload();
-        const resp = await computeIndicators(payload);
+        
+        // 2. Compute - Sending specific CONFIGS to backend
+        const resp = await computeIndicators(payload, activeConfigs);
+        
         if (cancelled) return;
         
         const indicators = resp?.indicators || [];
         const incomingSeriesKeys = new Set(); 
 
+        // 3. Render Loop
         for (const ind of indicators) {
           const indicatorCode = (ind.code || `ind_${ind.id}`).toString();
-        
-          if (!activeIndicators.includes(indicatorCode)) {
-             continue; 
-          }
-
           const chartType = (ind.chart_type || "overlay").toString().toLowerCase(); 
           const seriesArr = Array.isArray(ind.series) ? ind.series : [];
           const defaultColor = ind.default_color || "#2196f3";
@@ -80,7 +80,7 @@ export default function useIndicators({
             }
           }
 
-          // Series Creation
+          // Series Logic
           for (const sMeta of seriesArr) {
             const skey = String(sMeta.series_key || sMeta.seriesName || Math.random()).toLowerCase();
             const mapKey = `${indicatorCode}::${skey}`;
@@ -110,8 +110,10 @@ export default function useIndicators({
                 };
 
                 const SeriesClass = seriesType === "histogram" ? HistogramSeries : seriesType === "area" ? AreaSeries : LineSeries;
-                const createdSeries = paneForIndicator.addSeries ? paneForIndicator.addSeries(SeriesClass, seriesOpts) 
-                                                                 : chartApi.addSeries(SeriesClass, seriesOpts);
+                
+                const createdSeries = paneForIndicator.addSeries 
+                                      ? paneForIndicator.addSeries(SeriesClass, seriesOpts) 
+                                      : chartApi.addSeries(SeriesClass, seriesOpts);
                 
                 seriesMapRef.current[mapKey] = { series: createdSeries, type: seriesType, pane: paneForIndicator };
 
@@ -132,13 +134,13 @@ export default function useIndicators({
             delete seriesMapRef.current[key];
           }
         });
-
+        
       } catch (err) { console.error(err); }
     };
 
     fetchAndRender();
     return () => { cancelled = true; };
-  }, [chartApiRef, mainPaneRef, candles, enabled, getIndicatorPayload, activeIndicators]); 
+  }, [chartApiRef, mainPaneRef, candles, enabled, getIndicatorPayload, JSON.stringify(activeConfigs)]); 
 
   useEffect(() => {
     return () => {

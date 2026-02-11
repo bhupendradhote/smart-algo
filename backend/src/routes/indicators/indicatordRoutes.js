@@ -1,5 +1,5 @@
 import express from "express";
-import { computeIndicators, listIndicators } from "../../controllers/indicators/indicatorController.js";
+import { computeIndicators, listIndicators, saveIndicatorSettings } from "../../controllers/indicators/indicatorController.js";
 
 const router = express.Router();
 
@@ -8,5 +8,5 @@ const router = express.Router();
  */
 router.get("/list", listIndicators); 
 router.post("/compute", computeIndicators);
-
+router.post("/save", saveIndicatorSettings); 
 export default router;

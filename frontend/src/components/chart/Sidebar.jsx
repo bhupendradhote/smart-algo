@@ -3,7 +3,7 @@ import React from 'react';
 const styles = {
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.5)', zIndex: 99, display: 'flex', justifyContent: 'flex-end',
+    background: 'rgba(0,0,0,0.5)', zIndex: 900, display: 'flex', justifyContent: 'flex-end',
   },
   sidebar: {
     width: '280px', height: '100%', background: '#161923',
@@ -25,10 +25,18 @@ const styles = {
     padding: '10px 12px', marginBottom: '4px', borderRadius: '6px',
     background: '#0f1220', border: '1px solid #20242e',
   },
-  label: { display: 'flex', flexDirection: 'column', gap: '2px' },
+  label: { display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 },
   name: { color: '#d1d4dc', fontSize: '14px', fontWeight: 500 },
   code: { color: '#686d76', fontSize: '11px', textTransform: 'uppercase' },
-  // Simple CSS toggle switch
+  
+  controls: { display: 'flex', alignItems: 'center', gap: '10px' },
+  editBtn: {
+    background: 'transparent', border: '1px solid #2b313a', borderRadius: '4px',
+    color: '#9aa0aa', cursor: 'pointer', padding: '2px 6px', fontSize: '12px',
+    transition: '0.2s'
+  },
+  
+  // Toggle Switch
   switch: {
     position: 'relative', display: 'inline-block', width: '34px', height: '20px',
   },
@@ -45,7 +53,7 @@ const styles = {
   }),
 };
 
-export default function Sidebar({ isOpen, onClose, availableIndicators, activeIndicators, onToggle }) {
+export default function Sidebar({ isOpen, onClose, availableIndicators, activeConfigs, onToggle, onEdit }) {
   if (!isOpen) return null;
 
   return (
@@ -58,11 +66,12 @@ export default function Sidebar({ isOpen, onClose, availableIndicators, activeIn
         
         <div style={styles.list}>
           {availableIndicators.length === 0 && (
-            <div style={{padding: 20, textAlign: 'center', color: '#666'}}>Loading...</div>
+             <div style={{padding: 20, textAlign: 'center', color: '#666'}}>Loading...</div>
           )}
 
           {availableIndicators.map((ind) => {
-            const isActive = activeIndicators.includes(ind.code);
+            const isActive = !!activeConfigs[ind.code];
+            
             return (
               <div key={ind.code} style={styles.item}>
                 <div style={styles.label}>
@@ -70,17 +79,23 @@ export default function Sidebar({ isOpen, onClose, availableIndicators, activeIn
                   <span style={styles.code}>{ind.type}</span>
                 </div>
                 
-                <label style={styles.switch}>
-                  <input 
-                    type="checkbox" 
-                    checked={isActive} 
-                    onChange={() => onToggle(ind.code)}
-                    style={styles.input}
-                  />
-                  <span style={styles.slider(isActive, ind.default_color)}>
-                    <span style={styles.knob(isActive)} />
-                  </span>
-                </label>
+                <div style={styles.controls}>
+                    <button style={styles.editBtn} onClick={() => onEdit(ind)} title="Edit Settings">
+                        ⚙️
+                    </button>
+
+                    <label style={styles.switch}>
+                      <input 
+                        type="checkbox" 
+                        checked={isActive} 
+                        onChange={() => onToggle(ind.code)}
+                        style={styles.input}
+                      />
+                      <span style={styles.slider(isActive, ind.default_color)}>
+                        <span style={styles.knob(isActive)} />
+                      </span>
+                    </label>
+                </div>
               </div>
             );
           })}

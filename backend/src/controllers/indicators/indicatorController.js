@@ -1,4 +1,6 @@
 // backend/src/controllers/indicators/indicatorController.js
+
+import { getDB } from "../../config/db.js";
 import {
   getEnabledIndicators,
   getIndicatorParams,
@@ -12,7 +14,6 @@ import rsiCalculator from "../../utils/indicators/rsiCalculator.js";
 import macdCalculator from "../../utils/indicators/macdCalculator.js";
 import vwapCalculator from "../../utils/indicators/vwapCalculator.js";
 
-
 const INDICATOR_HANDLERS = {
   smaCalculator,
   emaCalculator,
@@ -21,223 +22,186 @@ const INDICATOR_HANDLERS = {
   vwapCalculator,
 };
 
-//  get the list of indicators for the UI sidebar
+// --- 1. GET LIST (Merged with User Preferences) ---
 export const listIndicators = async (req, res) => {
   try {
-    const list = await getEnabledIndicators();
-    const menu = list.map(i => ({
-      id: i.id,
-      code: i.code,
-      name: i.name,
-      type: i.chart_type || 'overlay', 
-      default_color: i.default_color
+    const userId = req.query.userId || 1; 
+    
+    const indicators = await getEnabledIndicators();
+    
+    // Fetch user-specific settings
+    let userSettings = [];
+    try {
+        const [rows] = await getDB().query(
+            "SELECT indicator_code, params, is_active FROM user_indicator_settings WHERE user_id = ?", 
+            [userId]
+        );
+        userSettings = rows;
+    } catch(e) {
+    }
+
+    const fullList = await Promise.all(indicators.map(async (ind) => {
+      const paramDefs = await getIndicatorParams(ind.id);
+      
+      const userConfig = userSettings.find(u => u.indicator_code === ind.code);
+
+      return {
+        id: ind.id,
+        code: ind.code,
+        name: ind.name,
+        type: ind.chart_type || 'overlay',
+        default_color: ind.default_color,
+        // Active state: User pref > Default false
+        is_active: userConfig ? Boolean(userConfig.is_active) : false,
+        params: paramDefs.map(p => {
+            let currentValue = p.default_value;
+            if (userConfig && userConfig.params) {
+                const parsedParams = typeof userConfig.params === 'string' 
+                    ? JSON.parse(userConfig.params) 
+                    : userConfig.params;
+                
+                if (parsedParams[p.param_key] !== undefined) {
+                    currentValue = parsedParams[p.param_key];
+                }
+            }
+
+            return {
+                key: p.param_key,
+                label: p.param_label || p.param_key, 
+                type: p.param_type,
+                default_value: p.default_value,
+                value: currentValue
+            };
+        })
+      };
     }));
-    res.json(menu);
+
+    res.json(fullList);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to list indicators" });
   }
 };
 
+// --- 2. SAVE SETTINGS ---
 
-const buildParamsFromRows = (paramsArr) => {
-  const params = {};
-  (paramsArr || []).forEach((p) => {
-    const key = p.param_key;
-    const type = (p.param_type || "int").toLowerCase();
-    const raw = p.default_value;
+export const saveIndicatorSettings = async (req, res) => {
+    try {
+        const { userId, code, params, isActive } = req.body;
 
-    if (type === "int") params[key] = Number.parseInt(raw, 10) || 0;
-    else if (type === "float") params[key] = Number.parseFloat(raw) || 0;
-    else if (type === "bool") params[key] = raw === "1" || raw === "true";
-    else params[key] = raw;
-  });
-  return params;
-};
+        console.log("Saving settings:", { userId, code, isActive }); // Debug log
 
+        if (!code) return res.status(400).json({ message: "Indicator code required" });
 
-const evaluateExpression = (expr, ctx) => {
-  if (!expr) return NaN;
-  const replaced = expr.replace(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g, (id) => {
-    if (Object.prototype.hasOwnProperty.call(ctx, id)) {
-      const v = ctx[id];
-      return Number.isFinite(v) ? String(v) : "0";
+        const paramsString = typeof params === 'object' ? JSON.stringify(params) : params;
+
+        await getDB().query(
+            `INSERT INTO user_indicator_settings (user_id, indicator_code, params, is_active)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE 
+             params = VALUES(params), 
+             is_active = VALUES(is_active)`,
+            [userId || 1, code, paramsString, isActive ? 1 : 0]
+        );
+
+        res.json({ success: true });
+    } catch (e) {
+        // Log the REAL error to your terminal
+        console.error("SQL Save Error:", e.sqlMessage || e.message); 
+        res.status(500).json({ message: "Database save failed", error: e.message });
     }
-    return "0";
-  });
-
-  if (!/^[0-9+\-*/().\s]+$/.test(replaced)) {
-    return NaN;
-  }
-
-  try {
-    const fn = new Function(`return (${replaced});`);
-    const result = fn();
-    return Number.isFinite(result) ? result : NaN;
-  } catch (e) {
-    return NaN;
-  }
 };
 
-
-const buildSeriesPoint = (outRow, seriesMeta) => {
-  if (!outRow) return { time: null, value: null };
-
-  if (seriesMeta.value_expression) {
-    const v = evaluateExpression(seriesMeta.value_expression, outRow);
-    return { time: outRow.time, value: Number.isFinite(v) ? Number(v) : null };
-  }
-
-  const key = seriesMeta.series_key;
-  if (Object.prototype.hasOwnProperty.call(outRow, key)) {
-    const v = outRow[key];
-    return { time: outRow.time, value: Number.isFinite(v) ? Number(v) : null };
-  }
-
-  if (Object.prototype.hasOwnProperty.call(outRow, "value")) {
-    const v = outRow.value;
-    return { time: outRow.time, value: Number.isFinite(v) ? Number(v) : null };
-  }
-
-  return { time: outRow.time, value: null };
-};
-
+// --- 3. COMPUTE ---
 export const computeIndicators = async (req, res) => {
   try {
-    const { candles } = req.body;
+    const { candles, configurations } = req.body; 
 
     if (!Array.isArray(candles) || candles.length === 0) {
-      return res.status(400).json({
-        message: "Candles array is required",
-        indicators: [],
-      });
+      return res.status(400).json({ message: "Candles array is required", indicators: [] });
     }
 
-    // IMPORTANT: preserve volume and other OHLC fields
-    const safeCandles = candles
-      .map((c) => ({
-        time: Number(c.time),
-        open: Number(c.open || c.close || 0),
-        high: Number(c.high || c.close || 0),
-        low: Number(c.low || c.close || 0),
-        close: Number(c.close),
+    const safeCandles = candles.map(c => ({
+        time: Number(c.time), 
+        open: Number(c.open || c.close || 0), 
+        high: Number(c.high || c.close || 0), 
+        low: Number(c.low || c.close || 0), 
+        close: Number(c.close), 
         volume: Number(c.volume || 0),
         hl2: c.hl2 !== undefined ? Number(c.hl2) : undefined,
         hlc3: c.hlc3 !== undefined ? Number(c.hlc3) : undefined,
         ohlc4: c.ohlc4 !== undefined ? Number(c.ohlc4) : undefined,
-      }))
-      .filter((c) => Number.isFinite(c.time) && Number.isFinite(c.close));
+    })).filter(c => Number.isFinite(c.close));
 
-    if (safeCandles.length === 0) {
-      return res.status(400).json({
-        message: "Invalid candle format",
-        indicators: [],
-      });
-    }
-
-    const indicators = await getEnabledIndicators();
+    const activeConfigs = configurations || [];
+    const allIndicators = await getEnabledIndicators(); 
     const output = [];
 
-    for (const indicator of indicators) {
-      const paramsArr = await getIndicatorParams(indicator.id);
-      const handlerRow = await getIndicatorHandler(indicator.id);
-      const seriesMetaArr = await getIndicatorSeries(indicator.id);
+    for (const config of activeConfigs) {
+        const indicatorDB = allIndicators.find(i => i.code === config.code);
+        if (!indicatorDB) continue;
 
-      if (!handlerRow) {
-        console.warn("No handler for indicator:", indicator.code);
-        continue;
-      }
+        const handlerRow = await getIndicatorHandler(indicatorDB.id);
+        if (!handlerRow || handlerRow.is_active === 0) continue;
 
-      if (handlerRow.is_active === 0) {
-        console.info(`Indicator logic for ${indicator.code} is disabled (is_active=0)`);
-        continue;
-      }
+        const handlerFn = INDICATOR_HANDLERS[handlerRow.handler];
+        if (!handlerFn) continue;
 
-      const handlerFn = INDICATOR_HANDLERS[handlerRow.handler];
-      if (!handlerFn) {
-        console.warn("Handler function not found for:", handlerRow.handler);
-        continue;
-      }
-
-      const params = buildParamsFromRows(paramsArr);
-
-      let handlerOutput = [];
-      try {
-        handlerOutput = await handlerFn(safeCandles, params);
-
-        if (!Array.isArray(handlerOutput)) {
-          console.warn("Handler output not an array for", indicator.code);
-          continue;
-        }
-      } catch (calcErr) {
-        console.error(`Indicator ${indicator.code} failed`, calcErr);
-        continue;
-      }
-
-      if ((indicator.code || "").toUpperCase() === "VWAP") {
-        try {
-          console.log("DEBUG VWAP output sample:", handlerOutput.slice(0, 5));
-        } catch (e) {
-          // ignore
-        }
-      }
-
-      const normalized = handlerOutput
-        .map((r) => {
-          if (!r || r.time === undefined || r.time === null) return null;
-          return { ...r, time: Number(r.time) };
-        })
-        .filter(Boolean);
-
-      const seriesList = [];
-
-      if (!seriesMetaArr || seriesMetaArr.length === 0) {
-        const fallbackData = normalized.map((r) => ({
-          time: r.time,
-          value: Number.isFinite(r.value) ? r.value : null,
-        }));
-        seriesList.push({
-          series_key: indicator.code.toLowerCase(),
-          series_name: indicator.name,
-          series_type: indicator.series_type || "line",
-          color: indicator.default_color,
-          y_axis: "left",
-          data: fallbackData,
+        const dbParamsDefs = await getIndicatorParams(indicatorDB.id);
+        const finalParams = {};
+        
+        dbParamsDefs.forEach(p => {
+            const val = (config.params && config.params[p.param_key] !== undefined)
+                        ? config.params[p.param_key]
+                        : p.default_value;
+            
+            if (p.param_type === 'int') finalParams[p.param_key] = parseInt(val, 10);
+            else if (p.param_type === 'float') finalParams[p.param_key] = parseFloat(val);
+            else if (p.param_type === 'bool') finalParams[p.param_key] = (val === true || val === "true" || val === "1");
+            else finalParams[p.param_key] = val;
         });
-      } else {
-        for (const sMeta of seriesMetaArr) {
-          const sData = normalized.map((r) => {
-            const p = buildSeriesPoint(r, sMeta);
-            return { time: p.time, value: p.value };
-          });
 
-          seriesList.push({
-            series_key: sMeta.series_key,
-            series_name: sMeta.series_name,
-            series_type: sMeta.series_type,
-            color: sMeta.color || indicator.default_color,
-            visible: Boolean(sMeta.visible),
-            y_axis: sMeta.y_axis || "left",
-            data: sData,
-          });
+        let calculatedData = [];
+        try {
+            calculatedData = await handlerFn(safeCandles, finalParams);
+        } catch(e) {
+            continue;
         }
-      }
 
-      output.push({
-        id: indicator.id,
-        code: indicator.code,
-        name: indicator.name,
-        chart_type: indicator.chart_type,
-        default_color: indicator.default_color,
-        series: seriesList,
-      });
+        const seriesMetaArr = await getIndicatorSeries(indicatorDB.id);
+        const seriesList = seriesMetaArr.map(sMeta => {
+            const data = calculatedData.map(row => {
+                if (!row) return null;
+                const val = (row[sMeta.series_key] !== undefined) ? row[sMeta.series_key] : row.value;
+                return { 
+                    time: Number(row.time), 
+                    value: Number.isFinite(val) ? Number(val) : null 
+                };
+            }).filter(Boolean);
+
+            return {
+                series_key: sMeta.series_key,
+                series_name: sMeta.series_name,
+                series_type: sMeta.series_type,
+                color: sMeta.color || indicatorDB.default_color,
+                visible: true,
+                y_axis: sMeta.y_axis,
+                data
+            };
+        });
+
+        output.push({
+            id: indicatorDB.id,
+            code: indicatorDB.code,
+            name: indicatorDB.name,
+            chart_type: indicatorDB.chart_type,
+            default_color: indicatorDB.default_color,
+            series: seriesList
+        });
     }
 
-    return res.json({ indicators: output });
+    res.json({ indicators: output });
   } catch (err) {
-    console.error("computeIndicators fatal error:", err);
-    return res.status(500).json({
-      message: "Internal indicator computation error",
-      indicators: [],
-    });
+    res.status(500).json({ message: "Computation error", indicators: [] });
   }
 };
