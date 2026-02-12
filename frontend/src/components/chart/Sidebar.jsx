@@ -76,7 +76,7 @@ export default function Sidebar({ isOpen, onClose, availableIndicators, activeCo
               <div key={ind.code} style={styles.item}>
                 <div style={styles.label}>
                   <span style={styles.name}>{ind.name}</span>
-                  <span style={styles.code}>{ind.type}</span>
+                  <span style={styles.code}>{ind.indicator_type}</span>
                 </div>
                 
                 <div style={styles.controls}>

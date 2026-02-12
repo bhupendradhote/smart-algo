@@ -4,13 +4,14 @@ import { getDB } from "../config/db.js";
 // Get all enabled indicators (basic metadata)
 export const getEnabledIndicators = async () => {
   const [rows] = await getDB().query(
-    `SELECT id, code, name, default_color, chart_type, display_order, enabled
+    `SELECT id, code, name, indicator_type, default_color, chart_type, display_order, enabled
      FROM indicators
      WHERE enabled = 1
-     ORDER BY display_order ASC`
+     ORDER BY indicator_type ASC, display_order ASC`
   );
   return rows;
 };
+
 
 // Get parameters for an indicator
 export const getIndicatorParams = async (indicatorId) => {

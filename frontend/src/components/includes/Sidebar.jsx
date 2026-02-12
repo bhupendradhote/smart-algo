@@ -1,46 +1,63 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
+// I'm using lucide-react for icons, but you can use any library (like FontAwesome)
+import { 
+  LayoutDashboard, 
+  Network, 
+  BarChart2, 
+  Users, 
+  FileText, 
+  Settings, 
+  LogOut, 
+  ChevronLeft, 
+  ChevronRight 
+} from "lucide-react";
+import "../../assets/styles/Sidebar.css"; // Assuming you have a CSS file
 
 const Sidebar = ({ onLogout }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  // Define menu items for cleaner rendering
+  const navItems = [
+    { path: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
+    { path: "/connect", label: "Connect", icon: <Network size={20} /> },
+    { path: "/chart", label: "Chart", icon: <BarChart2 size={20} /> },
+    { path: "/broker", label: "Brokers", icon: <Users size={20} /> },
+    { path: "/reports", label: "Reports", icon: <FileText size={20} /> },
+    { path: "/settings", label: "Settings", icon: <Settings size={20} /> },
+  ];
+
   return (
-    <aside className="dash-sidebar">
+    <aside className={`dash-sidebar ${isCollapsed ? "collapsed" : ""}`}>
+      {/* Toggle Button */}
+      <button className="sidebar-toggle" onClick={toggleSidebar}>
+        {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+      </button>
+
       <nav>
         <ul>
-          <li>
-            <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "active" : "")}>
-              Dashboard
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/connect" className={({ isActive }) => (isActive ? "active" : "")}>
-              Connect
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/chart" className={({ isActive }) => (isActive ? "active" : "")}>
-              Chart
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/broker" className={({ isActive }) => (isActive ? "active" : "")}>
-              Brokers
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/reports" className={({ isActive }) => (isActive ? "active" : "")}>
-              Reports
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/settings" className={({ isActive }) => (isActive ? "active" : "")}>
-              Settings
-            </NavLink>
-          </li>
+          {navItems.map((item) => (
+            <li key={item.path}>
+              <NavLink
+                to={item.path}
+                className={({ isActive }) => (isActive ? "active" : "")}
+              >
+                <span className="icon">{item.icon}</span>
+                {/* Conditionally render text based on state */}
+                {!isCollapsed && <span className="label">{item.label}</span>}
+              </NavLink>
+            </li>
+          ))}
         </ul>
 
         <div className="sidebar-bottom">
           <button className="sidebar-logout" onClick={onLogout}>
-            Logout
+            <LogOut size={20} />
+            {!isCollapsed && <span>Logout</span>}
           </button>
         </div>
       </nav>

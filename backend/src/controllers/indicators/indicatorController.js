@@ -1,5 +1,3 @@
-// backend/src/controllers/indicators/indicatorController.js
-
 import { getDB } from "../../config/db.js";
 import {
   getEnabledIndicators,
@@ -13,6 +11,17 @@ import emaCalculator from "../../utils/indicators/emaCalculator.js";
 import rsiCalculator from "../../utils/indicators/rsiCalculator.js";
 import macdCalculator from "../../utils/indicators/macdCalculator.js";
 import vwapCalculator from "../../utils/indicators/vwapCalculator.js";
+import bbCalculator from "../../utils/indicators/bbCalculator.js";
+import atrCalculator from "../../utils/indicators/atrCalculator.js";
+import adxCalculator from "../../utils/indicators/adxCalculator.js";
+import stochRsiCalculator from "../../utils/indicators/stochRsiCalculator.js";
+import obvCalculator from "../../utils/indicators/obvCalculator.js";
+import wmaCalculator from "../../utils/indicators/wmaCalculator.js";
+import hmaCalculator from "../../utils/indicators/hmaCalculator.js";
+import smmaCalculator from "../../utils/indicators/smmaCalculator.js";
+import vwmaCalculator from "../../utils/indicators/vwmaCalculator.js";
+import doubleMaCalculator from "../../utils/indicators/doubleMaCalculator.js";
+import tripleMaCalculator from "../../utils/indicators/tripleMaCalculator.js";
 
 const INDICATOR_HANDLERS = {
   smaCalculator,
@@ -20,6 +29,17 @@ const INDICATOR_HANDLERS = {
   rsiCalculator,
   macdCalculator,
   vwapCalculator,
+  bbCalculator,
+  atrCalculator,
+  adxCalculator,
+  stochRsiCalculator,
+  obvCalculator,
+  wmaCalculator,
+  hmaCalculator,
+  smmaCalculator,
+  vwmaCalculator,
+  doubleMaCalculator,
+  tripleMaCalculator
 };
 
 // --- 1. GET LIST (Merged with User Preferences) ---
@@ -38,6 +58,7 @@ export const listIndicators = async (req, res) => {
         );
         userSettings = rows;
     } catch(e) {
+      // error
     }
 
     const fullList = await Promise.all(indicators.map(async (ind) => {
@@ -49,9 +70,10 @@ export const listIndicators = async (req, res) => {
         id: ind.id,
         code: ind.code,
         name: ind.name,
+        // chart type (overlay / separate)
         type: ind.chart_type || 'overlay',
+        indicator_type: ind.indicator_type || 'Trend',
         default_color: ind.default_color,
-        // Active state: User pref > Default false
         is_active: userConfig ? Boolean(userConfig.is_active) : false,
         params: paramDefs.map(p => {
             let currentValue = p.default_value;
@@ -195,6 +217,7 @@ export const computeIndicators = async (req, res) => {
             code: indicatorDB.code,
             name: indicatorDB.name,
             chart_type: indicatorDB.chart_type,
+            indicator_type: indicatorDB.indicator_type || 'Trend',
             default_color: indicatorDB.default_color,
             series: seriesList
         });

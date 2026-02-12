@@ -2,12 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../includes/Sidebar";
 import Header from "../includes/Header";
-import { getAuthUser, logoutUser } from "../../services/userServices/authService"; // Adjust path if needed
-import "../../assets/styles/dashboard.css"; // Ensure global dash styles are loaded here
+import { getAuthUser, logoutUser } from "../../services/userServices/authService"; 
+import "../../assets/styles/dashboard.css";
 
 const MainLayout = () => {
   const navigate = useNavigate();
-  // Initialize user state from auth service
   const [user] = useState(() => getAuthUser());
 
   // Redirect if user data is missing (Double check safety)

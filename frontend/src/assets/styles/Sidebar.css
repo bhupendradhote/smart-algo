@@ -1,0 +1,125 @@
+/* Sidebar.css */
+.dash-sidebar {
+  width: 250px;       /* Expanded width */
+  height: 100vh;
+  background: #1e1e2d; /* Dark background */
+  color: #e0e0e0;      /* Light text */
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  position: relative;
+  border-right: 1px solid #2d2d3f; /* Subtle dark border */
+}
+
+/* Collapsed State */
+.dash-sidebar.collapsed {
+  width: 80px;
+}
+
+/* Toggle Button Styling */
+.sidebar-toggle {
+  position: absolute;
+  top: 15px;
+  right: -12px;       /* Hangs off the edge */
+  background: #2d2d3f; /* Dark button background */
+  color: #fff;
+  border: 1px solid #45455e;
+  border-radius: 50%;
+  width: 24px;        /* Slightly smaller for cleaner look */
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: background 0.2s;
+}
+
+.sidebar-toggle:hover {
+  background: #45455e; /* Lighter on hover */
+}
+
+/* Nav Link Styling */
+.dash-sidebar nav ul li a,
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px; /* Added horizontal padding */
+  text-decoration: none;
+  color: #a6a6b7;    /* Muted gray text (not pure white) */
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent; /* Placeholder for active border */
+}
+
+/* Icon Styling */
+.dash-sidebar .icon {
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a6a6b7;    /* Icon matches text */
+}
+
+/* Text Label */
+.dash-sidebar .label {
+  margin-left: 15px;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+/* Hover State */
+.dash-sidebar nav ul li a:hover,
+.sidebar-logout:hover {
+  background: #2d2d3f; /* Lighter dark shade */
+  color: #ffffff;      /* Text turns pure white */
+}
+
+.dash-sidebar nav ul li a:hover .icon,
+.sidebar-logout:hover .icon {
+  color: #ffffff;
+}
+
+/* Active/Selected State */
+.dash-sidebar nav ul li a.active {
+  background: #2d2d3f;
+  color: #ffffff;
+  border-left: 3px solid #6366f1; /* Purple/Blue accent strip on the left */
+}
+
+.dash-sidebar nav ul li a.active .icon {
+  color: #6366f1; /* Icon takes accent color */
+}
+
+/* Collapsed Logic */
+.dash-sidebar.collapsed .label {
+  display: none;
+  opacity: 0;
+}
+
+/* Center items better when collapsed */
+.dash-sidebar.collapsed nav ul li a,
+.dash-sidebar.collapsed .sidebar-logout {
+  justify-content: center;
+  padding: 15px 0; /* Remove horizontal padding to center icon */
+}
+
+.dash-sidebar.collapsed .icon {
+  margin: 0;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  border-top: 1px solid #2d2d3f;
+}
+
+.sidebar-logout {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 1rem; /* Ensure font size matches links */
+}

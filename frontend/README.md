@@ -13,7 +13,7 @@ npm install socket.io-client
 npm init -y
 npm install dotenv
 npm install express cors dotenv bcrypt jsonwebtoken 
-
+npm install lucide-react
 npm install --save-dev nodemon
 npm install socket.io-client
 

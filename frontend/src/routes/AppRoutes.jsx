@@ -20,6 +20,7 @@ const AppRoutes = () => {
 
       {/* Public Routes */}
       <Route path="/auth" element={<LoginSignup />} />
+          <Route path="/chart" element={<Chart />} />
 
       {/* Protected Routes */}
       <Route element={<ProtectedRoute />}>
@@ -27,7 +28,6 @@ const AppRoutes = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/connect" element={<Connect />} />
           <Route path="/test-ws" element={<AngelLive />} />
-          <Route path="/chart" element={<Chart />} />
 
         </Route>
       </Route>

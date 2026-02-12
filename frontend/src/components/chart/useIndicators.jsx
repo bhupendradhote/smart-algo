@@ -104,7 +104,7 @@ export default function useIndicators({
               try {
                 const uniqueScaleId = isMainPane ? 'right' : `scale_${indicatorCode}`;
                 const seriesOpts = {
-                  color, lineWidth: 2, priceLineVisible: false, lastValueVisible: true,
+                  color, lineWidth: 1, priceLineVisible: false, lastValueVisible: true, // indicator editing
                   title: sMeta.series_name || sMeta.displayName || skey,
                   priceScaleId: uniqueScaleId, 
                 };
