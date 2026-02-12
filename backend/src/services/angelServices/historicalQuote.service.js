@@ -1,4 +1,4 @@
-// src/services/angelServices/historicalQuote.service.js
+// backend/src/services/angelServices/historicalQuote.service.js
 import axios from "axios";
 import { SmartAPI } from "smartapi-javascript";
 
@@ -141,7 +141,6 @@ export const getHistoricalDataService = async ({
 };
 
 // Fetch Market Data (LTP, OHLC)
-
 export const getMarketDataService = async ({
   apiKey,
   jwtToken,

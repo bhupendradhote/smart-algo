@@ -4,7 +4,7 @@ import { getBrokerAccounts } from "../../services/angelServices/brokerAccountSer
 import { getSavedTokenData } from "../../services/angelServices/connectService";
 
 export default function useChartData(symbolToken, interval) {
-  const [creds, setCreds] = useState({ apiKey: "", jwtToken: "" });
+  const [sessionReady, setSessionReady] = useState(false);
   const [candles, setCandles] = useState([]);
   const [marketData, setMarketData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -27,31 +27,32 @@ export default function useChartData(symbolToken, interval) {
     }
   };
 
-  // 2. Load Credentials
+  // Verify Account and Session
   useEffect(() => {
     mountedRef.current = true;
-    const loadCreds = async () => {
+    const checkSession = async () => {
       try {
         const tokenData = getSavedTokenData?.();
-        const jwt = tokenData?.jwtToken;
+        const isActive = tokenData?.sessionActive;
+        
         const accounts = await getBrokerAccounts();
         const list = Array.isArray(accounts) ? accounts : accounts?.data || [];
         const angelAccount = list.find((acc) => acc.broker_name?.toLowerCase().includes("angel"));
 
-        if (angelAccount && jwt && mountedRef.current) {
-          setCreds({ apiKey: angelAccount.api_key, jwtToken: jwt });
+        if (angelAccount && isActive && mountedRef.current) {
+          setSessionReady(true);
         } else if (mountedRef.current) {
           setError("Please connect your Angel One account.");
         }
       } catch (e) {
-        console.warn("Failed to load credentials", e);
+        console.warn("Failed to load session state", e);
       }
     };
-    loadCreds();
+    checkSession();
     return () => { mountedRef.current = false; };
   }, []);
 
-  // 3. Process Data (Sort & Deduplicate for Chart)
+  // Process Data (Sort & Deduplicate for Chart)
   const processData = (rawData) => {
     if (!Array.isArray(rawData)) return [];
     
@@ -77,9 +78,9 @@ export default function useChartData(symbolToken, interval) {
     return Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
   };
 
-  // 4. Fetch Function
+  // Fetch Function (✨ FIXED: Sequential fetching to prevent race conditions)
   const fetchData = useCallback(async () => {
-    if (!creds.apiKey || !creds.jwtToken) return;
+    if (!sessionReady) return;
 
     setLoading(true);
     setError("");
@@ -94,46 +95,50 @@ export default function useChartData(symbolToken, interval) {
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       };
 
-      const [histRes, mktRes] = await Promise.allSettled([
-        getHistoricalData({
-          apiKey: creds.apiKey,
-          jwtToken: creds.jwtToken,
+      // ✨ 1. Fetch Historical Data FIRST
+      try {
+        const histRes = await getHistoricalData({
           exchange: "NSE",
           symbolToken,
           interval,
           fromDate: formatDate(fromDate),
           toDate: formatDate(now),
-        }),
-        getMarketData({ 
-            apiKey: creds.apiKey, 
-            jwtToken: creds.jwtToken, 
-            mode: "LTP", 
-            exchangeTokens: { NSE: [symbolToken] } 
-        })
-      ]);
-
-      if (mountedRef.current) {
-        if (histRes.status === "fulfilled" && histRes.value?.data) {
-          const cleanCandles = processData(histRes.value.data);
+        });
+        
+        if (histRes?.data && mountedRef.current) {
+          const cleanCandles = processData(histRes.data);
           setCandles(cleanCandles);
         } else {
-           console.warn("Historical fetch failed or empty", histRes);
+           console.warn("Historical fetch empty");
         }
-
-        if (mktRes.status === "fulfilled") {
-           const data = mktRes.value?.data?.fetched?.[0] || mktRes.value?.data?.data?.fetched?.[0];
-           if (data) setMarketData(data);
-        }
-
-        setLastUpdated(new Date());
+      } catch (histErr) {
+        console.warn("Historical fetch failed:", histErr);
       }
+
+      // ✨ 2. Fetch Market Data SECOND (Session is now guaranteed)
+      try {
+        const mktRes = await getMarketData({ 
+          mode: "LTP", 
+          exchangeTokens: { NSE: [symbolToken] } 
+        });
+        
+        const data = mktRes?.data?.fetched?.[0] || mktRes?.data?.data?.fetched?.[0];
+        if (data && mountedRef.current) {
+          setMarketData(data);
+        }
+      } catch (mktErr) {
+        console.warn("Market data fetch failed:", mktErr);
+      }
+
+      if (mountedRef.current) setLastUpdated(new Date());
+
     } catch (err) {
       console.error(err);
-      if (mountedRef.current) setError("Failed to fetch market data.");
+      if (mountedRef.current) setError("Failed to fetch data.");
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [creds, symbolToken, interval]);
+  }, [sessionReady, symbolToken, interval]);
 
   useEffect(() => {
     fetchData();
@@ -155,7 +160,7 @@ export default function useChartData(symbolToken, interval) {
     loading,
     error,
     lastUpdated,
-    credsPresent: !!(creds.apiKey && creds.jwtToken),
+    credsPresent: sessionReady, 
     refresh: fetchData,
     getIndicatorPayload,
   };

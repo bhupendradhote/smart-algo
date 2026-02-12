@@ -4,48 +4,58 @@ import { BrokerAccountModel } from "../../models/brokerAccounts.js";
 // ADD BROKER ACCOUNT
 export const addBrokerAccount = async (req, res) => {
   try {
-    // Safety check for auth middleware
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Unauthorized: User not found" });
-    }
+    // 1. Get user ID from your auth middleware
+    const userId = req.user.id; 
 
-    const userId = req.user.id;
-    const { broker_name, api_key, client_code, totp_secret } = req.body;
+    // 2. Extract ALL fields from the frontend request, including mpin
+    const { 
+      broker_name, 
+      api_key, 
+      client_code, 
+      totp_secret, 
+      mpin // ✨ ADDED: Grab mpin from the request
+    } = req.body;
 
-    if (!broker_name || !api_key || !client_code || !totp_secret) {
+    // 3. Basic Validation
+    if (!broker_name || !api_key || !client_code || !mpin) {
       return res.status(400).json({
-        message: "All fields are required",
+        success: false,
+        message: "Missing required fields: broker_name, api_key, client_code, or mpin",
       });
     }
 
-    const exists = await BrokerAccountModel.exists(
-      userId,
-      broker_name,
-      client_code
-    );
-
+    // 4. Check for existing account to prevent duplicates
+    const exists = await BrokerAccountModel.exists(userId, broker_name, client_code);
     if (exists) {
       return res.status(409).json({
-        message: "Broker account already exists",
+        success: false,
+        message: "This broker account is already linked to your profile.",
       });
     }
 
+    // 5. Save to database
     const accountId = await BrokerAccountModel.create({
       user_id: userId,
       broker_name,
       api_key,
       client_code,
-      totp_secret, 
+      totp_secret,
+      mpin, // ✨ ADDED: Pass the mpin to your model so it can be encrypted and saved
+      status: "active",
     });
 
     return res.status(201).json({
+      success: true,
       message: "Broker account added successfully",
-      account_id: accountId,
+      data: { id: accountId }
     });
+
   } catch (error) {
-    console.error("Add broker account error:", error);
+    console.error("Add Broker Account Error:", error);
     return res.status(500).json({
-      message: "Internal server error",
+      success: false,
+      message: "Failed to add broker account",
+      error: error.message
     });
   }
 };

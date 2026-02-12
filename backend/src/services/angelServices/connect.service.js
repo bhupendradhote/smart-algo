@@ -2,7 +2,6 @@
 import { SmartAPI } from "smartapi-javascript";
 import speakeasy from "speakeasy";
 
-
 export const connectAngelService = async ({
   apiKey,
   clientCode,
@@ -38,12 +37,17 @@ export const connectAngelService = async ({
 
     const session = await smartApi.generateSession(clientCode, password, totpToUse);
 
+    // ✨ ADDED: Debug log to see EXACTLY what Angel One returns
+    console.log("Angel API Raw Response:", JSON.stringify(session));
+
     if (!session) {
       throw new Error("No response received from Angel SmartAPI");
     }
 
-    if (session.status === false) {
-      const msg = session.message || "Angel login failed with status false";
+    // ✨ UPDATED: More robust check for failed status
+    // Handles false, "false", null, or completely missing status
+    if (!session.status || session.status === false || session.status === "false") {
+      const msg = session.message || session.errorcode || "Angel login failed. Check credentials.";
       throw new Error(msg);
     }
 

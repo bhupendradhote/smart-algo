@@ -1,23 +1,27 @@
 // src/models/brokerAccounts.js
 import { getDB } from "../config/db.js";
+import { encrypt, decrypt } from "../utils/encryption.js"; // ✨ ADDED: Utility imports
 
 export const BrokerAccountModel = {
   // CREATE
   async create(account) {
     const db = getDB();
 
+    // ✨ UPDATED: Added mpin to the SQL statement
     const sql = `
       INSERT INTO broker_accounts
-      (user_id, broker_name, api_key, client_code, totp_secret_hash, status)
-      VALUES (?, ?, ?, ?, ?, ?)
+      (user_id, broker_name, api_key, client_code, totp_secret_hash, mpin, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
+    // ✨ UPDATED: Encrypting the sensitive fields before database insertion
     const values = [
       account.user_id,
       account.broker_name,
-      account.api_key,
-      account.client_code,
-      account.totp_secret, 
+      encrypt(account.api_key), 
+      account.client_code, // client_code is generally safe unencrypted
+      encrypt(account.totp_secret), 
+      encrypt(account.mpin),
       account.status || "active",
     ];
 
@@ -29,6 +33,7 @@ export const BrokerAccountModel = {
   async findByUserId(userId) {
     const db = getDB();
     
+    // ✨ UPDATED: Added mpin to the SELECT statement
     const sql = `
       SELECT 
         id, 
@@ -37,6 +42,7 @@ export const BrokerAccountModel = {
         client_code, 
         api_key, 
         totp_secret_hash, 
+        mpin,
         status, 
         created_at
       FROM broker_accounts
@@ -45,7 +51,14 @@ export const BrokerAccountModel = {
     `;
     
     const [rows] = await db.query(sql, [userId]);
-    return rows;
+
+    // ✨ UPDATED: Decrypt rows before returning
+    return rows.map(row => {
+      row.api_key = decrypt(row.api_key);
+      row.totp_secret_hash = decrypt(row.totp_secret_hash);
+      row.mpin = decrypt(row.mpin);
+      return row;
+    });
   },
 
   // FIND ALL (No Validation)
@@ -58,13 +71,21 @@ export const BrokerAccountModel = {
         broker_name, 
         client_code, 
         api_key, 
-        totp_secret_hash, 
+        totp_secret_hash,
+        mpin,
         status, 
         created_at
       FROM broker_accounts
     `;
     const [rows] = await db.query(sql);
-    return rows;
+
+    // ✨ UPDATED: Decrypt rows
+    return rows.map(row => {
+      row.api_key = decrypt(row.api_key);
+      row.totp_secret_hash = decrypt(row.totp_secret_hash);
+      row.mpin = decrypt(row.mpin);
+      return row;
+    });
   },
 
   // FIND SINGLE ACCOUNT
@@ -81,7 +102,10 @@ export const BrokerAccountModel = {
     const [rows] = await db.query(sql, [id]);
     
     if (rows[0]) {
-        rows[0].totp_secret = rows[0].totp_secret_hash; 
+        // ✨ UPDATED: Decrypt fields and map totp_secret correctly
+        rows[0].api_key = decrypt(rows[0].api_key);
+        rows[0].totp_secret = decrypt(rows[0].totp_secret_hash); 
+        rows[0].mpin = decrypt(rows[0].mpin);
     }
     
     return rows[0];

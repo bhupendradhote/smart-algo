@@ -7,7 +7,7 @@ export const connectController = async (req, res) => {
     const body = req.body || {};
     const apiKey = body.apiKey || body.api_key;
     const clientCode = body.clientCode || body.client_code;
-    const password = body.password || body.mpin; // sometimes sent as mpin
+    const password = body.password || body.mpin; 
     const totp = body.totp;
     const totpSecret = body.totpSecret || body.totp_secret;
 
@@ -28,20 +28,29 @@ export const connectController = async (req, res) => {
       totpSecret,
     });
 
-    // 4. Success Response
+    // ✨ 4. Save to Session (DO NOT send this back to frontend)
+    // Bind the session to the current user's ID to prevent cross-account bugs
+    req.session.angelTokens = {
+      userId: req.user?.id, // ✨ REQUIRED FOR AUTO-RECONNECT BINDING
+      jwtToken: tokenData.jwtToken,
+      refreshToken: tokenData.refreshToken,
+      feedToken: tokenData.feedToken,
+    };
+
+    // 5. Success Response
     return res.status(200).json({
       success: true,
       message: "Connected successfully",
       data: {
-        tokenData,
-        profile,
+        profile, 
+        sessionActive: true // A flag so frontend knows it worked
       },
     });
 
   } catch (err) {
     console.error("connectController Error:", err.message);
     
-    // 5. Error Response
+    // 6. Error Response
     const statusCode = err.message.includes("Login Failed") || err.message.includes("Invalid") ? 401 : 500;
 
     return res.status(statusCode).json({

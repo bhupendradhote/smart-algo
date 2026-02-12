@@ -4,7 +4,6 @@ import API from "../api/axios";
 const HISTORICAL_URL = "/angel/historical-data";
 const MARKET_DATA_URL = "/angel/market-data";
 
-
 export const getHistoricalData = async (params) => {
   try {
     const { data } = await API.post(HISTORICAL_URL, params);
@@ -17,7 +16,6 @@ export const getHistoricalData = async (params) => {
     );
   }
 };
-
 
 export const getMarketData = async (params) => {
   try {

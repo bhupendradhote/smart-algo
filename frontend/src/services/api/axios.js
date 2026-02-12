@@ -5,9 +5,11 @@ const API = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  // ✨ REQUIRED: This tells the browser to include the session cookie in requests
+  withCredentials: true, 
 });
 
-// Request Interceptor
+// Request Interceptor (Keeps app auth token, no changes needed here)
 API.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("auth_token") || localStorage.getItem("token");

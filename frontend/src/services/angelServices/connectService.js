@@ -1,9 +1,8 @@
 /* eslint-disable no-unused-vars */
-// frontend/src/services/angelServices/connectService.js
-
 import API from "../api/axios"; 
 
-const STORAGE_KEY = "angel_tokenData";
+// ✨ CHANGED: We no longer store raw tokens, just UI state
+const STORAGE_KEY = "angel_session_state";
 
 // --- Token Management Utilities ---
 
@@ -18,13 +17,13 @@ export const getSavedTokenData = () => {
   }
 };
 
-export const persistTokenData = (tokenData) => {
+export const persistTokenData = (sessionState) => {
   try {
-    if (!tokenData) {
+    if (!sessionState) {
       localStorage.removeItem(STORAGE_KEY);
       return;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tokenData));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionState));
   } catch (err) {
     console.warn("persistTokenData error", err);
   }
@@ -34,17 +33,20 @@ export const clearSavedTokenData = () => {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (err) {
-
     // ignore
   }
 };
 
 // --- Initialization ---
 
+// --- Initialization ---
 export const initializeAngelService = () => {
+  // ✨ ADDED: Force-delete the dangerous legacy tokens for all users
+  localStorage.removeItem("angel_tokenData"); 
+
   const saved = getSavedTokenData();
   if (saved) {
-    console.log("Angel Service Initialized with saved data");
+    console.log("Angel Service Initialized with secure session state");
   }
 };
 
@@ -71,23 +73,15 @@ export const connectAngel = async (
       return { success: false, error: body?.message || "Connection failed" };
     }
 
-    const tokenData = body?.data?.tokenData ?? body?.tokenData ?? body;
+    // ✨ CHANGED: Backend now returns sessionActive flag instead of tokenData
     const profile = body?.data?.profile ?? body?.profile ?? null;
+    const sessionState = { sessionActive: true, connectedAt: new Date().toISOString() };
 
-    if (persist && tokenData) {
-  const angelDataToStore = {
-    apiKey,                 // ✅ REQUIRED for WS
-    clientCode,             // ✅ REQUIRED for WS
-    jwtToken: tokenData.jwtToken,
-    refreshToken: tokenData.refreshToken,
-    feedToken: tokenData.feedToken,
-  };
+    if (persist) {
+      persistTokenData(sessionState);
+    }
 
-  persistTokenData(angelDataToStore);
-}
-
-
-    return { success: true, data: { tokenData, profile } };
+    return { success: true, data: { sessionState, profile } };
 
   } catch (err) {
     console.error("Connect Angel Error:", err);
@@ -111,10 +105,10 @@ export const refreshSession = async () => {
       return { success: false, error: body?.message || "Refresh failed" };
     }
 
-    const tokenData = body?.data?.tokenData ?? body?.tokenData ?? null;
-    if (tokenData) persistTokenData(tokenData);
+    const sessionState = { sessionActive: true, refreshedAt: new Date().toISOString() };
+    persistTokenData(sessionState);
     
-    return { success: true, data: { tokenData } };
+    return { success: true, data: { sessionState } };
   } catch (err) {
     const serverMsg =
       err?.response?.data?.message || err?.message || "Failed to refresh session";

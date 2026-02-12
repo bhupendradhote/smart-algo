@@ -47,7 +47,8 @@ const Connect = () => {
   });
   const [reconnectMpin, setReconnectMpin] = useState("");
 
-  const isSessionActive = !!(tokenPreview && tokenPreview.jwtToken);
+  // ✨ CHANGED: Check the new boolean flag instead of the raw jwtToken
+  const isSessionActive = !!(tokenPreview && tokenPreview.sessionActive);
 
   // 1. DATA FETCHING
   const checkData = useCallback(async () => {
@@ -106,14 +107,16 @@ const Connect = () => {
             broker_name: "ANGEL",
             api_key: formData.apiKey,
             client_code: formData.clientCode,
-            totp_secret: formData.totpSecret || undefined
+            totp_secret: formData.totpSecret || undefined,
+            // ✨ ADDED: Include the MPIN so the backend can encrypt and store it
+            mpin: formData.password 
           };
           await addBrokerAccount(payload);
       }
 
       setMessage({ type: "success", text: "Connected & Saved Successfully!" });
       
-      const saved = getSavedTokenData() || data?.tokenData;
+      const saved = getSavedTokenData() || data?.sessionState;
       setTokenPreview(saved);
       await checkData();
       setFormData({ apiKey:"", clientCode:"", password:"", totp:"", totpSecret:"" });
@@ -154,7 +157,7 @@ const Connect = () => {
 
         setMessage({ type: "success", text: "Session Restored!" });
         
-        const saved = getSavedTokenData() || data?.tokenData;
+        const saved = getSavedTokenData() || data?.sessionState;
         setTokenPreview(saved);
         setReconnectMpin(""); 
 
