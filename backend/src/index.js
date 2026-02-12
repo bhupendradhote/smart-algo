@@ -14,7 +14,6 @@ import authRoutes from "./routes/users/user.routes.js";
 import angelRoutes from "./routes/angel/angel.routes.js";
 import angelWsRoutes from "./routes/angel/angel.ws.routes.js";
 
-import indicatorRoutes from "./routes/indicators/indicators.routes.js";
 import indicatordRoutes from "./routes/indicators/indicatordRoutes.js";
 
 const app = express();
@@ -32,7 +31,6 @@ app.use("/api/indicators", indicatordRoutes);
 /* -------------------- Routes -------------------- */
 app.use("/api/auth", authRoutes);
 app.use("/api/angel", angelRoutes);
-app.use("/api/indicators", indicatorRoutes);
 app.use("/api/angel", angelWsRoutes);
 
 

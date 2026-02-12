@@ -6,7 +6,6 @@ import Connect from "../pages/connect";
 import ProtectedRoute from "./ProtectedRoute";
 import MainLayout from "../components/layouts/MainLayout";
 import TestApi from "../components/TestApi";
-import AngelChart from "../pages/angel/AngelChart";
 import AngelLive from "../components/AngelLive";
 import Chart from "../components/chart/chart";
 
@@ -16,7 +15,6 @@ const AppRoutes = () => {
 
 
 <Route path="/test-api" element={<TestApi />} />
-<Route path="/test-chart" element={<Chart />} />
 
 
 
@@ -28,8 +26,8 @@ const AppRoutes = () => {
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/connect" element={<Connect />} />
-          <Route path="/chart" element={<AngelChart />} />
           <Route path="/test-ws" element={<AngelLive />} />
+          <Route path="/chart" element={<Chart />} />
 
         </Route>
       </Route>
