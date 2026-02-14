@@ -7,16 +7,14 @@ export const addBrokerAccount = async (req, res) => {
     // 1. Get user ID from your auth middleware
     const userId = req.user.id; 
 
-    // 2. Extract ALL fields from the frontend request, including mpin
     const { 
       broker_name, 
       api_key, 
       client_code, 
       totp_secret, 
-      mpin // ✨ ADDED: Grab mpin from the request
+      mpin // Grab mpin from the request
     } = req.body;
 
-    // 3. Basic Validation
     if (!broker_name || !api_key || !client_code || !mpin) {
       return res.status(400).json({
         success: false,
@@ -24,7 +22,7 @@ export const addBrokerAccount = async (req, res) => {
       });
     }
 
-    // 4. Check for existing account to prevent duplicates
+    // Check for existing account to prevent duplicates
     const exists = await BrokerAccountModel.exists(userId, broker_name, client_code);
     if (exists) {
       return res.status(409).json({
@@ -33,14 +31,14 @@ export const addBrokerAccount = async (req, res) => {
       });
     }
 
-    // 5. Save to database
+    // Save to database
     const accountId = await BrokerAccountModel.create({
       user_id: userId,
       broker_name,
       api_key,
       client_code,
       totp_secret,
-      mpin, // ✨ ADDED: Pass the mpin to your model so it can be encrypted and saved
+      mpin, 
       status: "active",
     });
 

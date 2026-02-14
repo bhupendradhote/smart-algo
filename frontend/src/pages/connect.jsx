@@ -47,7 +47,6 @@ const Connect = () => {
   });
   const [reconnectMpin, setReconnectMpin] = useState("");
 
-  // ✨ CHANGED: Check the new boolean flag instead of the raw jwtToken
   const isSessionActive = !!(tokenPreview && tokenPreview.sessionActive);
 
   // 1. DATA FETCHING
@@ -108,7 +107,7 @@ const Connect = () => {
             api_key: formData.apiKey,
             client_code: formData.clientCode,
             totp_secret: formData.totpSecret || undefined,
-            // ✨ ADDED: Include the MPIN so the backend can encrypt and store it
+            // Include the MPIN so the backend can encrypt and store it
             mpin: formData.password 
           };
           await addBrokerAccount(payload);

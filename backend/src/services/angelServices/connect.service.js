@@ -37,15 +37,12 @@ export const connectAngelService = async ({
 
     const session = await smartApi.generateSession(clientCode, password, totpToUse);
 
-    // ✨ ADDED: Debug log to see EXACTLY what Angel One returns
-    console.log("Angel API Raw Response:", JSON.stringify(session));
 
     if (!session) {
       throw new Error("No response received from Angel SmartAPI");
     }
 
-    // ✨ UPDATED: More robust check for failed status
-    // Handles false, "false", null, or completely missing status
+    // More robust check for failed status
     if (!session.status || session.status === false || session.status === "false") {
       const msg = session.message || session.errorcode || "Angel login failed. Check credentials.";
       throw new Error(msg);

@@ -15,7 +15,6 @@ const INTERVAL_LIMITS = {
   ONE_DAY: 2000,
 };
 
-// Format: YYYY-MM-DD HH:mm
 function toAngelString(dateObj) {
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istDate = new Date(dateObj.getTime() + istOffset);
@@ -80,7 +79,6 @@ export const getHistoricalDataService = async ({
     currentStart = new Date(currentEnd.getTime() + 60 * 1000);
   }
 
-  // 4. Define Single Fetch Function
   const fetchChunk = async (chunk) => {
     try {
       const response = await axios.post(

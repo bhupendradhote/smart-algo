@@ -1,6 +1,6 @@
 // backend/src/services/angelServices/websocket.service.js
 import { WebSocketV2 } from "smartapi-javascript";
-import { io } from "../../socket.js"; // 👈 your socket.io instance
+import { io } from "../../socket.js"; 
 
 class AngelWebSocketManager {
   constructor() {

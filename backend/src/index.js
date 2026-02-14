@@ -9,8 +9,8 @@ import cors from "cors";
 import http from "http";
 import { Server as SocketIO } from "socket.io";
 import session from "express-session"; 
-import MySQLStoreFactory from "express-mysql-session"; // ✨ ADDED: MySQL Sessions
-import rateLimit from "express-rate-limit"; // ✨ ADDED: Rate Limiting
+import MySQLStoreFactory from "express-mysql-session"; // MySQL Sessions
+import rateLimit from "express-rate-limit"; // Rate Limiting
 
 import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/users/user.routes.js";
@@ -21,7 +21,7 @@ import indicatordRoutes from "./routes/indicators/indicatordRoutes.js";
 const app = express();
 
 /* -------------------- Security & Proxy -------------------- */
-// ✨ CRITICAL FOR PRODUCTION: Tells Express to trust secure cookies if behind a proxy/load balancer (like Nginx, Render, AWS)
+// CRITICAL FOR PRODUCTION: Tells Express to trust secure cookies if behind a proxy/load balancer (like Nginx, Render, AWS)
 app.set('trust proxy', 1);
 
 /* -------------------- CORS Configuration -------------------- */
@@ -80,7 +80,7 @@ const sessionStore = new MySQLStore({
 app.use(session({
   key: 'smart_algo_session', // Name of the cookie
   secret: process.env.SESSION_SECRET || "smart-algo-super-secret-key",
-  store: sessionStore, // ✨ Saves sessions to your MySQL DB instead of memory!
+  store: sessionStore, // Saves sessions to your MySQL DB instead of memory!
   resave: false,
   saveUninitialized: false,
   cookie: {

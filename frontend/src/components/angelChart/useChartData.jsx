@@ -78,7 +78,7 @@ export default function useChartData(symbolToken, interval) {
     return Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
   };
 
-  // Fetch Function (✨ FIXED: Sequential fetching to prevent race conditions)
+  // Fetch Function ( FIXED: Sequential fetching to prevent race conditions)
   const fetchData = useCallback(async () => {
     if (!sessionReady) return;
 
@@ -95,7 +95,7 @@ export default function useChartData(symbolToken, interval) {
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
       };
 
-      // ✨ 1. Fetch Historical Data FIRST
+      // 1. Fetch Historical Data FIRST
       try {
         const histRes = await getHistoricalData({
           exchange: "NSE",
@@ -115,7 +115,7 @@ export default function useChartData(symbolToken, interval) {
         console.warn("Historical fetch failed:", histErr);
       }
 
-      // ✨ 2. Fetch Market Data SECOND (Session is now guaranteed)
+      // 2. Fetch Market Data SECOND (Session is now guaranteed)
       try {
         const mktRes = await getMarketData({ 
           mode: "LTP", 

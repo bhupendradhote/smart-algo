@@ -28,10 +28,9 @@ export const connectController = async (req, res) => {
       totpSecret,
     });
 
-    // ✨ 4. Save to Session (DO NOT send this back to frontend)
-    // Bind the session to the current user's ID to prevent cross-account bugs
+    // 4. Bind the session to the current user's ID to prevent cross-account bugs
     req.session.angelTokens = {
-      userId: req.user?.id, // ✨ REQUIRED FOR AUTO-RECONNECT BINDING
+      userId: req.user?.id, 
       jwtToken: tokenData.jwtToken,
       refreshToken: tokenData.refreshToken,
       feedToken: tokenData.feedToken,
@@ -43,7 +42,7 @@ export const connectController = async (req, res) => {
       message: "Connected successfully",
       data: {
         profile, 
-        sessionActive: true // A flag so frontend knows it worked
+        sessionActive: true 
       },
     });
 

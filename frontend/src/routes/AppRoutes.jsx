@@ -7,7 +7,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import MainLayout from "../components/layouts/MainLayout";
 import TestApi from "../components/TestApi";
 import AngelLive from "../components/AngelLive";
-import Chart from "../components/chart/chart";
+import Chart from "../components/angelChart/chart";
 
 const AppRoutes = () => {
   return (

@@ -1,7 +1,8 @@
+
+
 // frontend
 
 npm create vite@latest .
-
 npm install lightweight-charts
 npm install axios react-router-dom
 npm install totp-generator
@@ -11,7 +12,6 @@ npm install socket.io-client
 // backend
 
 npm init -y
-npm install dotenv
 npm install express cors dotenv bcrypt jsonwebtoken 
 npm install lucide-react
 npm install --save-dev nodemon

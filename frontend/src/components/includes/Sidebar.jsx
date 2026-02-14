@@ -12,7 +12,7 @@ import {
   ChevronLeft, 
   ChevronRight 
 } from "lucide-react";
-import "../../assets/styles/Sidebar.css"; // Assuming you have a CSS file
+import "../../assets/styles/Sidebar.css"; 
 
 const Sidebar = ({ onLogout }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -21,7 +21,6 @@ const Sidebar = ({ onLogout }) => {
     setIsCollapsed(!isCollapsed);
   };
 
-  // Define menu items for cleaner rendering
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
     { path: "/connect", label: "Connect", icon: <Network size={20} /> },
@@ -33,7 +32,6 @@ const Sidebar = ({ onLogout }) => {
 
   return (
     <aside className={`dash-sidebar ${isCollapsed ? "collapsed" : ""}`}>
-      {/* Toggle Button */}
       <button className="sidebar-toggle" onClick={toggleSidebar}>
         {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
       </button>
@@ -47,7 +45,6 @@ const Sidebar = ({ onLogout }) => {
                 className={({ isActive }) => (isActive ? "active" : "")}
               >
                 <span className="icon">{item.icon}</span>
-                {/* Conditionally render text based on state */}
                 {!isCollapsed && <span className="label">{item.label}</span>}
               </NavLink>
             </li>
